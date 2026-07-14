@@ -461,6 +461,20 @@
         font-size: 18px;
       }
     }
+
+    #policyHolderFields[data-locked="1"] input[type="text"],
+    #policyHolderFields[data-locked="1"] input[type="number"],
+    #policyHolderFields[data-locked="1"] input[type="date"],
+    #policyHolderFields[data-locked="1"] select,
+    #policyHolderFields[data-locked="1"] textarea {
+      pointer-events: none;
+      opacity: 0.9;
+    }
+
+    #policyHolderFields[data-locked="1"] .segmented {
+      pointer-events: none;
+      opacity: 0.9;
+    }
   </style>
 </head>
 <body>
@@ -575,7 +589,7 @@
             </label>
           </div>
 
-          <div id="policyHolderFields" class="hidden-fields">
+          <div id="policyHolderFields">
             <div class="form-row">
               <div class="label-wrap"><div class="label">姓名</div></div>
               <div class="field">
@@ -599,7 +613,6 @@
             <div class="form-row">
               <div class="label-wrap">
                 <div class="label">出生日期</div>
-                <div class="label-note">填写后自动计算年龄</div>
               </div>
               <div class="field">
                 <input type="date" id="holder_birth_date" name="投保人出生日期" />
@@ -609,7 +622,6 @@
             <div class="form-row">
               <div class="label-wrap">
                 <div class="label">年龄</div>
-                <div class="label-note">若填写将清空出生日期</div>
               </div>
               <div class="field">
                 <input type="number" id="holder_age" name="投保人年龄" placeholder="请输入年龄" min="0" />
@@ -835,7 +847,7 @@
         }
       }
     })();
-    
+
     const form = document.getElementById("appointmentForm");
 
     const birthDateInput = document.getElementById("birth_date");
@@ -843,8 +855,12 @@
 
     const sameAsInsuredCheckbox = document.getElementById("sameAsInsured");
     const policyHolderFields = document.getElementById("policyHolderFields");
+
     const holderBirthDateInput = document.getElementById("holder_birth_date");
     const holderAgeInput = document.getElementById("holder_age");
+
+    const holderNameInput = document.querySelector('input[name="投保人姓名"]');
+    const holderResidenceSelect = document.querySelector('select[name="投保人居住地"]');
 
     function calcAge(dateStr) {
       if (!dateStr) return "";
@@ -854,9 +870,7 @@
       const today = new Date();
       let age = today.getFullYear() - d.getFullYear();
       const m = today.getMonth() - d.getMonth();
-      if (m < 0 || (m === 0 && today.getDate() < d.getDate())) {
-        age -= 1;
-      }
+      if (m < 0 || (m === 0 && today.getDate() < d.getDate())) age -= 1;
       return age >= 0 ? String(age) : "";
     }
 
@@ -867,9 +881,7 @@
         return;
       }
       const a = calcAge(v);
-      if (a !== "") {
-        ageInputEl.value = a;
-      }
+      if (a !== "") ageInputEl.value = a;
       ageInputEl.readOnly = true;
     }
 
@@ -880,46 +892,115 @@
       ageInputEl.readOnly = false;
     }
 
-    function resetPolicyHolderFields() {
-      const inputs = policyHolderFields.querySelectorAll("input, select, textarea");
-      inputs.forEach((el) => {
-        if (el.type === "radio" || el.type === "checkbox") {
-          el.checked = el.defaultChecked;
-        } else if (el.tagName === "SELECT") {
-          el.selectedIndex = 0;
-        } else {
-          el.value = "";
-        }
-      });
-      holderAgeInput.readOnly = false;
+    function getCheckedValueByName(name) {
+      const el = document.querySelector(`input[name="${name}"]:checked`);
+      return el ? el.value : "";
     }
 
-    function togglePolicyHolderFields() {
-      if (sameAsInsuredCheckbox.checked) {
-        resetPolicyHolderFields();
-        policyHolderFields.style.display = "none";
+    function setRadioByName(name, value) {
+      const els = document.querySelectorAll(`input[name="${name}"]`);
+      els.forEach((r) => (r.checked = (r.value === value)));
+    }
+
+    function setLocked(locked) {
+      if (locked) {
+        policyHolderFields.setAttribute("data-locked", "1");
       } else {
-        policyHolderFields.style.display = "block";
+        policyHolderFields.removeAttribute("data-locked");
+      }
+    }
+
+    function syncPolicyHolderWithInsured() {
+      const insuredName = (document.querySelector('input[name="受保人姓名"]')?.value || "").trim();
+      const insuredGender = getCheckedValueByName("受保人性别");
+      const insuredSmoking = getCheckedValueByName("是否吸烟");
+      const insuredResidence = (document.querySelector('select[name="居住地"]')?.value || "").trim();
+
+      if (holderNameInput) holderNameInput.value = insuredName;
+
+      if (insuredGender) setRadioByName("投保人性别", insuredGender);
+      if (insuredSmoking) setRadioByName("投保人是否吸烟", insuredSmoking);
+
+      if (holderResidenceSelect) holderResidenceSelect.value = insuredResidence;
+
+      const insuredBirth = (birthDateInput.value || "").trim();
+      const insuredAge = (ageInput.value || "").trim();
+
+      if (insuredBirth) {
+        holderBirthDateInput.value = insuredBirth;
+        applyBirthToAge(holderBirthDateInput, holderAgeInput);
+      } else if (insuredAge) {
+        holderAgeInput.value = insuredAge;
+        applyAgeToBirth(holderAgeInput, holderBirthDateInput);
+      } else {
+        holderBirthDateInput.value = "";
+        holderAgeInput.value = "";
+        holderAgeInput.readOnly = false;
+      }
+    }
+
+    function togglePolicyHolderMode() {
+      policyHolderFields.style.display = "block";
+
+      if (sameAsInsuredCheckbox.checked) {
+        syncPolicyHolderWithInsured();
+        setLocked(true);
+      } else {
+        setLocked(false);
         applyBirthToAge(holderBirthDateInput, holderAgeInput);
       }
     }
 
-    sameAsInsuredCheckbox.addEventListener("change", togglePolicyHolderFields);
-    togglePolicyHolderFields();
+    sameAsInsuredCheckbox.addEventListener("change", togglePolicyHolderMode);
+    togglePolicyHolderMode();
 
     birthDateInput.addEventListener("change", function () {
       applyBirthToAge(birthDateInput, ageInput);
+      if (sameAsInsuredCheckbox.checked) {
+        syncPolicyHolderWithInsured();
+      }
     });
 
     ageInput.addEventListener("input", function () {
       applyAgeToBirth(ageInput, birthDateInput);
+      if (sameAsInsuredCheckbox.checked) {
+        syncPolicyHolderWithInsured();
+      }
     });
 
+    document.querySelectorAll('input[name="受保人性别"]').forEach((el) => {
+      el.addEventListener("change", function () {
+        if (sameAsInsuredCheckbox.checked) syncPolicyHolderWithInsured();
+      });
+    });
+
+    document.querySelectorAll('input[name="是否吸烟"]').forEach((el) => {
+      el.addEventListener("change", function () {
+        if (sameAsInsuredCheckbox.checked) syncPolicyHolderWithInsured();
+      });
+    });
+
+    const insuredNameInput = document.querySelector('input[name="受保人姓名"]');
+    if (insuredNameInput) {
+      insuredNameInput.addEventListener("input", function () {
+        if (sameAsInsuredCheckbox.checked) syncPolicyHolderWithInsured();
+      });
+    }
+
+    const insuredResidenceSelect = document.querySelector('select[name="居住地"]');
+    if (insuredResidenceSelect) {
+      insuredResidenceSelect.addEventListener("change", function () {
+        if (sameAsInsuredCheckbox.checked) syncPolicyHolderWithInsured();
+      });
+    }
+
     holderBirthDateInput.addEventListener("change", function () {
+      if (sameAsInsuredCheckbox.checked) return;
       applyBirthToAge(holderBirthDateInput, holderAgeInput);
     });
 
     holderAgeInput.addEventListener("input", function () {
+      if (sameAsInsuredCheckbox.checked) return;
       applyAgeToBirth(holderAgeInput, holderBirthDateInput);
     });
 
@@ -935,23 +1016,29 @@
 
       if (!birthDate && !age) {
         e.preventDefault();
+        alert("受保人的出生日期和投保年龄请至少填写一项。");
         return;
       }
 
-      if (!sameAsInsuredCheckbox.checked) {
-        const hb = (holderBirthDateInput.value || "").trim();
-        const ha = (holderAgeInput.value || "").trim();
+      if (sameAsInsuredCheckbox.checked) {
+        syncPolicyHolderWithInsured();
+        setLocked(true);
+        return;
+      }
 
-        if (hb) {
-          applyBirthToAge(holderBirthDateInput, holderAgeInput);
-        } else if (ha) {
-          applyAgeToBirth(holderAgeInput, holderBirthDateInput);
-        }
+      const hb = (holderBirthDateInput.value || "").trim();
+      const ha = (holderAgeInput.value || "").trim();
 
-        if (!hb && !ha) {
-          e.preventDefault();
-          return;
-        }
+      if (hb) {
+        applyBirthToAge(holderBirthDateInput, holderAgeInput);
+      } else if (ha) {
+        applyAgeToBirth(holderAgeInput, holderBirthDateInput);
+      }
+
+      if (!hb && !ha) {
+        e.preventDefault();
+        alert("投保人的出生日期和年龄请至少填写一项。");
+        return;
       }
     });
   </script>
