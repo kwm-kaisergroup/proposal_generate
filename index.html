@@ -589,7 +589,7 @@
             </label>
           </div>
 
-          <div id="policyHolderFields">
+          <div id="policyHolderFields" class="hidden-fields">
             <div class="form-row">
               <div class="label-wrap"><div class="label">姓名</div></div>
               <div class="field">
@@ -859,9 +859,6 @@
     const holderBirthDateInput = document.getElementById("holder_birth_date");
     const holderAgeInput = document.getElementById("holder_age");
 
-    const holderNameInput = document.querySelector('input[name="投保人姓名"]');
-    const holderResidenceSelect = document.querySelector('select[name="投保人居住地"]');
-
     function calcAge(dateStr) {
       if (!dateStr) return "";
       const d = new Date(dateStr);
@@ -892,107 +889,51 @@
       ageInputEl.readOnly = false;
     }
 
-    function getCheckedValueByName(name) {
-      const el = document.querySelector(`input[name="${name}"]:checked`);
-      return el ? el.value : "";
+    function setPolicyHolderEnabled(enabled) {
+      const els = policyHolderFields.querySelectorAll("input, select, textarea");
+      els.forEach((el) => {
+        el.disabled = !enabled;
+      });
     }
 
-    function setRadioByName(name, value) {
-      const els = document.querySelectorAll(`input[name="${name}"]`);
-      els.forEach((r) => (r.checked = (r.value === value)));
+    function clearPolicyHolderValues() {
+      const els = policyHolderFields.querySelectorAll("input, select, textarea");
+
+      els.forEach((el) => {
+        if (el.type === "radio" || el.type === "checkbox") {
+          el.checked = el.defaultChecked;
+        } else if (el.tagName === "SELECT") {
+          el.selectedIndex = 0;
+        } else {
+          el.value = "";
+        }
+      });
+
+      holderAgeInput.readOnly = false;
     }
 
-    function setLocked(locked) {
-      if (locked) {
-        policyHolderFields.setAttribute("data-locked", "1");
-      } else {
-        policyHolderFields.removeAttribute("data-locked");
-      }
-    }
-
-    function syncPolicyHolderWithInsured() {
-      const insuredName = (document.querySelector('input[name="受保人姓名"]')?.value || "").trim();
-      const insuredGender = getCheckedValueByName("受保人性别");
-      const insuredSmoking = getCheckedValueByName("是否吸烟");
-      const insuredResidence = (document.querySelector('select[name="居住地"]')?.value || "").trim();
-
-      if (holderNameInput) holderNameInput.value = insuredName;
-
-      if (insuredGender) setRadioByName("投保人性别", insuredGender);
-      if (insuredSmoking) setRadioByName("投保人是否吸烟", insuredSmoking);
-
-      if (holderResidenceSelect) holderResidenceSelect.value = insuredResidence;
-
-      const insuredBirth = (birthDateInput.value || "").trim();
-      const insuredAge = (ageInput.value || "").trim();
-
-      if (insuredBirth) {
-        holderBirthDateInput.value = insuredBirth;
-        applyBirthToAge(holderBirthDateInput, holderAgeInput);
-      } else if (insuredAge) {
-        holderAgeInput.value = insuredAge;
-        applyAgeToBirth(holderAgeInput, holderBirthDateInput);
-      } else {
-        holderBirthDateInput.value = "";
-        holderAgeInput.value = "";
-        holderAgeInput.readOnly = false;
-      }
-    }
-
-    function togglePolicyHolderMode() {
-      policyHolderFields.style.display = "block";
-
+    function togglePolicyHolderFields() {
       if (sameAsInsuredCheckbox.checked) {
-        syncPolicyHolderWithInsured();
-        setLocked(true);
+        clearPolicyHolderValues();
+        setPolicyHolderEnabled(false);
+        policyHolderFields.style.display = "none";
       } else {
-        setLocked(false);
+        setPolicyHolderEnabled(true);
+        policyHolderFields.style.display = "block";
         applyBirthToAge(holderBirthDateInput, holderAgeInput);
       }
     }
 
-    sameAsInsuredCheckbox.addEventListener("change", togglePolicyHolderMode);
-    togglePolicyHolderMode();
+    sameAsInsuredCheckbox.addEventListener("change", togglePolicyHolderFields);
+    togglePolicyHolderFields();
 
     birthDateInput.addEventListener("change", function () {
       applyBirthToAge(birthDateInput, ageInput);
-      if (sameAsInsuredCheckbox.checked) {
-        syncPolicyHolderWithInsured();
-      }
     });
 
     ageInput.addEventListener("input", function () {
       applyAgeToBirth(ageInput, birthDateInput);
-      if (sameAsInsuredCheckbox.checked) {
-        syncPolicyHolderWithInsured();
-      }
     });
-
-    document.querySelectorAll('input[name="受保人性别"]').forEach((el) => {
-      el.addEventListener("change", function () {
-        if (sameAsInsuredCheckbox.checked) syncPolicyHolderWithInsured();
-      });
-    });
-
-    document.querySelectorAll('input[name="是否吸烟"]').forEach((el) => {
-      el.addEventListener("change", function () {
-        if (sameAsInsuredCheckbox.checked) syncPolicyHolderWithInsured();
-      });
-    });
-
-    const insuredNameInput = document.querySelector('input[name="受保人姓名"]');
-    if (insuredNameInput) {
-      insuredNameInput.addEventListener("input", function () {
-        if (sameAsInsuredCheckbox.checked) syncPolicyHolderWithInsured();
-      });
-    }
-
-    const insuredResidenceSelect = document.querySelector('select[name="居住地"]');
-    if (insuredResidenceSelect) {
-      insuredResidenceSelect.addEventListener("change", function () {
-        if (sameAsInsuredCheckbox.checked) syncPolicyHolderWithInsured();
-      });
-    }
 
     holderBirthDateInput.addEventListener("change", function () {
       if (sameAsInsuredCheckbox.checked) return;
@@ -1021,8 +962,9 @@
       }
 
       if (sameAsInsuredCheckbox.checked) {
-        syncPolicyHolderWithInsured();
-        setLocked(true);
+        clearPolicyHolderValues();
+        setPolicyHolderEnabled(false);
+        policyHolderFields.style.display = "none";
         return;
       }
 
