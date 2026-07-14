@@ -490,11 +490,11 @@
         class="page"
         action="https://formsubmit.co/cathy.sin@kaisergroup.com.hk"
         method="POST"
+        target="submit_frame"
       >
         <input type="hidden" name="_subject" value="新预约提交通知" />
         <input type="hidden" name="_captcha" value="false" />
         <input type="hidden" name="_template" value="table" />
-        <input type="hidden" name="_next" value="https://kwm-kaisergroup.github.io/proposal_generate/?submitted=1" />
         <input type="hidden" name="表单来源" value="保险预约表单" />
 
         <section class="section">
@@ -562,8 +562,6 @@
                   <option selected>中国大陆</option>
                   <option>中国香港</option>
                   <option>中国澳门</option>
-                  <option>中国台湾</option>
-                  <option>新加坡</option>
                   <option>其他</option>
                 </select>
               </div>
@@ -794,6 +792,7 @@
           </div>
         </div>
       </form>
+      <iframe name="submit_frame" id="submit_frame" style="display:none;"></iframe>
     </div>
   </div>
 
@@ -986,7 +985,7 @@
       }
     });
   </script>
-  
+
   <!--Start of Tawk.to Script-->
   <script type="text/javascript">
     var Tawk_API = Tawk_API || {}, Tawk_LoadStart = new Date();
