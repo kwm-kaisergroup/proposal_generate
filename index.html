@@ -525,7 +525,6 @@
           <div class="form-row">
             <div class="label-wrap">
               <div class="label">出生日期</div>
-              <div class="label-note">填写后自动计算年龄</div>
             </div>
             <div class="field">
               <input type="date" id="birth_date" name="受保人出生日期" />
@@ -535,7 +534,6 @@
           <div class="form-row">
             <div class="label-wrap">
               <div class="label">投保年龄</div>
-              <div class="label-note">若填写将清空出生日期</div>
             </div>
             <div class="field">
               <input type="number" id="insured_age" name="投保年龄" placeholder="请输入投保年龄" min="0" />
@@ -909,7 +907,7 @@
         }
       });
 
-      holderAgeInput.readOnly = false;
+      if (holderAgeInput) holderAgeInput.readOnly = false;
     }
 
     function togglePolicyHolderFields() {
@@ -920,7 +918,9 @@
       } else {
         setPolicyHolderEnabled(true);
         policyHolderFields.style.display = "block";
-        applyBirthToAge(holderBirthDateInput, holderAgeInput);
+        if (holderBirthDateInput && holderAgeInput) {
+          applyBirthToAge(holderBirthDateInput, holderAgeInput);
+        }
       }
     }
 
@@ -935,15 +935,17 @@
       applyAgeToBirth(ageInput, birthDateInput);
     });
 
-    holderBirthDateInput.addEventListener("change", function () {
-      if (sameAsInsuredCheckbox.checked) return;
-      applyBirthToAge(holderBirthDateInput, holderAgeInput);
-    });
+    if (holderBirthDateInput && holderAgeInput) {
+      holderBirthDateInput.addEventListener("change", function () {
+        if (sameAsInsuredCheckbox.checked) return;
+        applyBirthToAge(holderBirthDateInput, holderAgeInput);
+      });
 
-    holderAgeInput.addEventListener("input", function () {
-      if (sameAsInsuredCheckbox.checked) return;
-      applyAgeToBirth(holderAgeInput, holderBirthDateInput);
-    });
+      holderAgeInput.addEventListener("input", function () {
+        if (sameAsInsuredCheckbox.checked) return;
+        applyAgeToBirth(holderAgeInput, holderBirthDateInput);
+      });
+    }
 
     form.addEventListener("submit", function (e) {
       const birthDate = (birthDateInput.value || "").trim();
@@ -968,8 +970,8 @@
         return;
       }
 
-      const hb = (holderBirthDateInput.value || "").trim();
-      const ha = (holderAgeInput.value || "").trim();
+      const hb = (holderBirthDateInput?.value || "").trim();
+      const ha = (holderAgeInput?.value || "").trim();
 
       if (hb) {
         applyBirthToAge(holderBirthDateInput, holderAgeInput);
