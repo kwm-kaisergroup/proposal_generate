@@ -835,7 +835,7 @@
         }
       }
     })();
-    
+
     const form = document.getElementById("appointmentForm");
 
     const birthDateInput = document.getElementById("birth_date");
@@ -845,6 +845,39 @@
     const policyHolderFields = document.getElementById("policyHolderFields");
     const holderBirthDateInput = document.getElementById("holder_birth_date");
     const holderAgeInput = document.getElementById("holder_age");
+
+    const SAME_TEXT = "与受保人一致";
+    const POLICY_HOLDER_FIELD_NAMES = [
+      "投保人姓名",
+      "投保人性别",
+      "投保人出生日期",
+      "投保人年龄",
+      "投保人是否吸烟",
+      "投保人居住地",
+    ];
+
+    function setPolicyHolderSubmitAsSame(enabled) {
+      if (!form) return;
+
+      const old = form.querySelectorAll('[data-same-generated="1"]');
+      old.forEach((el) => el.remove());
+
+      POLICY_HOLDER_FIELD_NAMES.forEach((name) => {
+        const controls = form.querySelectorAll(`[name="${name}"]`);
+        controls.forEach((el) => {
+          el.disabled = !!enabled;
+        });
+
+        if (enabled) {
+          const hidden = document.createElement("input");
+          hidden.type = "hidden";
+          hidden.name = name;
+          hidden.value = SAME_TEXT;
+          hidden.setAttribute("data-same-generated", "1");
+          form.appendChild(hidden);
+        }
+      });
+    }
 
     function calcAge(dateStr) {
       if (!dateStr) return "";
@@ -898,8 +931,10 @@
       if (sameAsInsuredCheckbox.checked) {
         resetPolicyHolderFields();
         policyHolderFields.style.display = "none";
+        setPolicyHolderSubmitAsSame(true);
       } else {
         policyHolderFields.style.display = "block";
+        setPolicyHolderSubmitAsSame(false);
         applyBirthToAge(holderBirthDateInput, holderAgeInput);
       }
     }
@@ -916,14 +951,18 @@
     });
 
     holderBirthDateInput.addEventListener("change", function () {
+      if (sameAsInsuredCheckbox.checked) return;
       applyBirthToAge(holderBirthDateInput, holderAgeInput);
     });
 
     holderAgeInput.addEventListener("input", function () {
+      if (sameAsInsuredCheckbox.checked) return;
       applyAgeToBirth(holderAgeInput, holderBirthDateInput);
     });
 
     form.addEventListener("submit", function (e) {
+      setPolicyHolderSubmitAsSame(sameAsInsuredCheckbox.checked);
+
       const birthDate = (birthDateInput.value || "").trim();
       const age = (ageInput.value || "").trim();
 
