@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>保费预缴优惠计算（宏利 & 友邦 & 安盛）</title>
+  <style>
+    :root{
+      --bg:#f6f8fb;
+      --card:#ffffff;
+      --ink:#1f2937;
+      --muted:#6b7280;
+      --line:#d9e1ec;
+      --accent:#2f6f8f;
+      --accent-soft:#e8f2f6;
+      --input:#fff8df;
+      --total:#edf7ed;
+    }
+
+    *{box-sizing:border-box}
+
+    body{
+      margin:0;
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Microsoft JhengHei","Noto Sans CJK TC",Arial,sans-serif;
+      color:var(--ink);
+      background:linear-gradient(180deg,#eef4f7 0%,var(--bg) 220px);
+      padding:28px;
+    }
+
+    .page{
+      max-width:920px;
+      margin:0 auto;
+    }
+
+    h1{
+      font-size:26px;
+      line-height:1.25;
+      margin:0 0 8px;
+      font-weight:750;
+      letter-spacing:.02em;
+    }
+
+    .subtitle{
+      color:var(--muted);
+      margin:0 0 22px;
+      font-size:14px;
+    }
+
+    .sheet{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:18px;
+      box-shadow:0 12px 32px rgba(15,23,42,.08);
+      overflow:hidden;
+      margin-bottom:24px;
+    }
+
+    .sheet-head{
+      padding:18px 22px;
+      background:var(--accent-soft);
+      border-bottom:1px solid var(--line);
+    }
+
+    .sheet-title{
+      font-size:20px;
+      font-weight:760;
+      margin:0;
+    }
+
+    .sheet-body{
+      padding:22px;
+    }
+
+    table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      table-layout:fixed;
+      border:1px solid var(--line);
+      border-radius:12px;
+      overflow:hidden;
+      background:#fff;
+    }
+
+    col.c1{width:24%}
+    col.c2{width:38%}
+    col.c3{width:38%}
+
+    th,td{
+      border-right:1px solid var(--line);
+      border-bottom:1px solid var(--line);
+      padding:11px 12px;
+      vertical-align:middle;
+    }
+
+    tr:last-child td{border-bottom:0}
+    th:last-child,td:last-child{border-right:0}
+
+    .label{
+      font-weight:650;
+      background:#fbfcfe;
+    }
+
+    .blank{
+      background:#fbfcfe;
+      color:transparent;
+    }
+
+    .input-cell{
+      background:var(--input);
+    }
+
+    .input-wrap{
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    input[type="number"]{
+      width:100%;
+      border:1px solid #d4b95e;
+      background:#fffdf2;
+      border-radius:8px;
+      padding:8px 10px;
+      font:inherit;
+      text-align:right;
+      color:var(--ink);
+    }
+
+    .suffix{
+      font-weight:650;
+      color:var(--muted);
+    }
+
+    .header-row td{
+      background:#f0f4f8;
+      font-weight:720;
+      text-align:center;
+    }
+
+    .year-cell{
+      text-align:center;
+      font-weight:650;
+      background:#fbfcfe;
+    }
+
+    .num{
+      text-align:right;
+      font-variant-numeric:tabular-nums;
+    }
+
+    .total-row td{
+      background:var(--total);
+      font-weight:750;
+    }
+
+    .result-note td{
+      background:#f8fbf8;
+      font-weight:700;
+    }
+
+    .actions{
+      display:flex;
+      justify-content:flex-end;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:16px;
+    }
+
+    .btn{
+      border:1px solid var(--accent);
+      background:var(--accent);
+      border-radius:10px;
+      padding:9px 18px;
+      cursor:pointer;
+      font-weight:650;
+      color:#fff;
+    }
+
+    .btn:hover{
+      opacity:.9;
+    }
+
+    .foot{
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.6;
+      margin-top:14px;
+    }
+
+    @media print{
+      body{
+        background:#fff;
+        padding:0;
+      }
+
+      .actions{
+        display:none;
+      }
+
+      .sheet{
+        box-shadow:none;
+        border-radius:0;
+      }
+
+      .page{
+        max-width:none;
+      }
+    }
+
+    @media (max-width:720px){
+      body{
+        padding:16px;
+      }
+
+      table{
+        font-size:14px;
+      }
+
+      th,td{
+        padding:9px 8px;
+      }
+
+      col.c1{width:26%}
+      col.c2{width:37%}
+      col.c3{width:37%}
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <h1>保费预缴优惠计算（宏利 & 友邦 & 安盛）</h1>
+    <p class="subtitle">填写黄色单元格后，点击“查看”生成预缴利息表格。</p>
+
+    <section class="sheet" id="calculator" data-premium="10000" data-years="5" data-rate="4">
+      <div class="sheet-head">
+        <h2 class="sheet-title">保费预缴优惠计算</h2>
+      </div>
+
+      <div class="sheet-body">
+        <table>
+          <colgroup>
+            <col class="c1">
+            <col class="c2">
+            <col class="c3">
+          </colgroup>
+
+          <tbody id="calc-body">
+            <tr>
+              <td class="label">年缴保费</td>
+              <td class="input-cell" colspan="2">
+                <input type="number" step="0.01" class="premium" value="10000">
+              </td>
+            </tr>
+
+            <tr>
+              <td class="label">缴付年期</td>
+              <td class="input-cell" colspan="2">
+                <input type="number" step="1" min="1" class="years" value="5">
+              </td>
+            </tr>
+
+            <tr>
+              <td class="label">预缴利率</td>
+              <td class="input-cell" colspan="2">
+                <div class="input-wrap">
+                  <input type="number" step="0.01" min="0" class="rate" value="4">
+                  <span class="suffix">%</span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="actions">
+          <button class="btn view" type="button">查看</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const fmtCurrency = new Intl.NumberFormat('zh-HK', {
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 2
+    });
+
+    function buildRows() {
+      const sheet = document.getElementById('calculator');
+      const tbody = document.getElementById('calc-body');
+
+      const premium = Number(sheet.querySelector('.premium').value || 0);
+      const years = Math.max(1, Math.floor(Number(sheet.querySelector('.years').value || 1)));
+
+      // 用户输入百分比，例如 4 = 4%
+      const ratePercent = Number(sheet.querySelector('.rate').value || 0);
+      const rate = ratePercent / 100;
+
+      // 每次点击查看前，先删除旧的计算结果
+      tbody.querySelectorAll('.generated-row').forEach(row => row.remove());
+
+      // 点击查看后才生成表头
+      const headerRow = document.createElement('tr');
+      headerRow.className = 'generated-row header-row';
+      headerRow.innerHTML = `
+        <td class="blank">&nbsp;</td>
+        <td>提前缴纳总保费</td>
+        <td>可获取的保证利息</td>
+      `;
+      tbody.appendChild(headerRow);
+
+      let interests = [];
+
+      for (let i = 1; i < years; i++) {
+        const prepaid = premium * (years - i);
+        const priorInterest = interests.reduce((a, b) => a + b, 0);
+
+        const interest = i === 1
+          ? prepaid * rate
+          : (prepaid + priorInterest) * rate;
+
+        interests.push(interest);
+
+        const tr = document.createElement('tr');
+        tr.className = 'generated-row calc-row';
+        tr.innerHTML = `
+          <td class="year-cell">${i}</td>
+          <td class="num">${fmtCurrency.format(prepaid)}</td>
+          <td class="num">${fmtCurrency.format(interest)}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+
+      const total = interests.reduce((a, b) => a + b, 0);
+
+      const totalRow = document.createElement('tr');
+      totalRow.className = 'generated-row total-row';
+      totalRow.innerHTML = `
+        <td>总获保证利息</td>
+        <td class="num" colspan="2">${fmtCurrency.format(total)}</td>
+      `;
+      tbody.appendChild(totalRow);
+
+      const noteRow = document.createElement('tr');
+      noteRow.className = 'generated-row result-note';
+      noteRow.innerHTML = `
+        <td>&nbsp;</td>
+        <td class="num" colspan="2">相等于首年保费的${premium ? (total / premium * 100).toFixed(2) : '0.00'}%</td>
+      `;
+      tbody.appendChild(noteRow);
+    }
+
+      document.querySelector('.view').addEventListener('click', function () {
+        buildRows();
+        this.style.display = 'none';
+      });
+  </script>
+</body>
+</html>
