@@ -859,7 +859,7 @@
     function setPolicyHolderSubmitAsSame(enabled) {
       if (!form) return;
 
-      const old = form.querySelectorAll('[data-same-generated="1"]');
+      const old = policyHolderFields.querySelectorAll('[data-same-generated="1"]');
       old.forEach((el) => el.remove());
 
       POLICY_HOLDER_FIELD_NAMES.forEach((name) => {
@@ -874,7 +874,8 @@
           hidden.name = name;
           hidden.value = SAME_TEXT;
           hidden.setAttribute("data-same-generated", "1");
-          form.appendChild(hidden);
+
+          policyHolderFields.appendChild(hidden);
         }
       });
     }
