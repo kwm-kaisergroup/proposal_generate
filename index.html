@@ -828,32 +828,10 @@
   </div>
 
   <script>
-    (function () {
-      const p = new URLSearchParams(location.search);
-      if (p.get("submitted") === "1") {
-        const mask = document.getElementById("submittedMask");
-        if (mask) mask.style.display = "flex";
-
-        const btn = document.getElementById("submittedBack");
-        if (btn) {
-          btn.addEventListener("click", function () {
-            p.delete("submitted");
-            const nextUrl = location.pathname + (p.toString() ? "?" + p.toString() : "");
-            location.href = nextUrl;
-          });
-        }
-      }
-    })();
-
     const form = document.getElementById("appointmentForm");
 
-    form.addEventListener("submit", function () {
-      setTimeout(function () {
-        const mask = document.getElementById("submittedMask");
-        if (mask) mask.style.display = "flex";
-        form.reset();
-      }, 300);
-    });
+    const mask = document.getElementById("submittedMask");
+    const btn = document.getElementById("submittedBack");
 
     const birthDateInput = document.getElementById("birth_date");
     const ageInput = document.getElementById("insured_age");
@@ -863,6 +841,23 @@
 
     const holderBirthDateInput = document.getElementById("holder_birth_date");
     const holderAgeInput = document.getElementById("holder_age");
+
+    function showSubmittedMask() {
+      if (mask) mask.style.display = "flex";
+    }
+
+    function hideSubmittedMask() {
+      if (mask) mask.style.display = "none";
+    }
+
+    if (btn && form) {
+      btn.addEventListener("click", function () {
+        hideSubmittedMask();
+        form.reset();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        togglePolicyHolderFields();
+      });
+    }
 
     function calcAge(dateStr) {
       if (!dateStr) return "";
@@ -903,7 +898,6 @@
 
     function clearPolicyHolderValues() {
       const els = policyHolderFields.querySelectorAll("input, select, textarea");
-
       els.forEach((el) => {
         if (el.type === "radio" || el.type === "checkbox") {
           el.checked = el.defaultChecked;
@@ -918,6 +912,8 @@
     }
 
     function togglePolicyHolderFields() {
+      if (!sameAsInsuredCheckbox || !policyHolderFields) return;
+
       if (sameAsInsuredCheckbox.checked) {
         clearPolicyHolderValues();
         setPolicyHolderEnabled(false);
@@ -931,32 +927,36 @@
       }
     }
 
-    sameAsInsuredCheckbox.addEventListener("change", togglePolicyHolderFields);
-    togglePolicyHolderFields();
+    if (sameAsInsuredCheckbox) {
+      sameAsInsuredCheckbox.addEventListener("change", togglePolicyHolderFields);
+      togglePolicyHolderFields();
+    }
 
-    birthDateInput.addEventListener("change", function () {
-      applyBirthToAge(birthDateInput, ageInput);
-    });
+    if (birthDateInput && ageInput) {
+      birthDateInput.addEventListener("change", function () {
+        applyBirthToAge(birthDateInput, ageInput);
+      });
 
-    ageInput.addEventListener("input", function () {
-      applyAgeToBirth(ageInput, birthDateInput);
-    });
+      ageInput.addEventListener("input", function () {
+        applyAgeToBirth(ageInput, birthDateInput);
+      });
+    }
 
     if (holderBirthDateInput && holderAgeInput) {
       holderBirthDateInput.addEventListener("change", function () {
-        if (sameAsInsuredCheckbox.checked) return;
+        if (sameAsInsuredCheckbox && sameAsInsuredCheckbox.checked) return;
         applyBirthToAge(holderBirthDateInput, holderAgeInput);
       });
 
       holderAgeInput.addEventListener("input", function () {
-        if (sameAsInsuredCheckbox.checked) return;
+        if (sameAsInsuredCheckbox && sameAsInsuredCheckbox.checked) return;
         applyAgeToBirth(holderAgeInput, holderBirthDateInput);
       });
     }
 
     form.addEventListener("submit", function (e) {
-      const birthDate = (birthDateInput.value || "").trim();
-      const age = (ageInput.value || "").trim();
+      const birthDate = (birthDateInput?.value || "").trim();
+      const age = (ageInput?.value || "").trim();
 
       if (birthDate) {
         applyBirthToAge(birthDateInput, ageInput);
@@ -970,42 +970,33 @@
         return;
       }
 
-      if (sameAsInsuredCheckbox.checked) {
+      if (sameAsInsuredCheckbox && sameAsInsuredCheckbox.checked) {
         clearPolicyHolderValues();
         setPolicyHolderEnabled(false);
         policyHolderFields.style.display = "none";
-        return;
+      } else {
+        const hb = (holderBirthDateInput?.value || "").trim();
+        const ha = (holderAgeInput?.value || "").trim();
+
+        if (hb) {
+          applyBirthToAge(holderBirthDateInput, holderAgeInput);
+        } else if (ha) {
+          applyAgeToBirth(holderAgeInput, holderBirthDateInput);
+        }
+
+        if (!hb && !ha) {
+          e.preventDefault();
+          alert("投保人的出生日期和年龄请至少填写一项。");
+          return;
+        }
       }
 
-      const hb = (holderBirthDateInput?.value || "").trim();
-      const ha = (holderAgeInput?.value || "").trim();
-
-      if (hb) {
-        applyBirthToAge(holderBirthDateInput, holderAgeInput);
-      } else if (ha) {
-        applyAgeToBirth(holderAgeInput, holderBirthDateInput);
-      }
-
-      if (!hb && !ha) {
-        e.preventDefault();
-        alert("投保人的出生日期和年龄请至少填写一项。");
-        return;
-      }
+      setTimeout(function () {
+        showSubmittedMask();
+      }, 200);
     });
   </script>
 
-  <!--Start of Tawk.to Script-->
-  <script type="text/javascript">
-    var Tawk_API = Tawk_API || {}, Tawk_LoadStart = new Date();
-    (function () {
-      var s1 = document.createElement("script"), s0 = document.getElementsByTagName("script")[0];
-      s1.async = true;
-      s1.src = "https://embed.tawk.to/6a55b3ec867e741d48fd9ae8/1jtfcdl9p";
-      s1.charset = "UTF-8";
-      s1.setAttribute("crossorigin", "*");
-      s0.parentNode.insertBefore(s1, s0);
-    })();
-  </script>
   <!--End of Tawk.to Script-->
 
 </body>
