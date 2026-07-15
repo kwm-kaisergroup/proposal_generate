@@ -488,7 +488,7 @@
       <form
         id="appointmentForm"
         class="page"
-        action="https://formsubmit.co/cathy.sin@kaisergroup.com.hk"
+        action="https://formsubmit.co/cathy.sin%40kaisergroup.com.hk"
         method="POST"
         target="submit_frame"
       >
@@ -850,15 +850,6 @@
       if (mask) mask.style.display = "none";
     }
 
-    if (btn && form) {
-      btn.addEventListener("click", function () {
-        hideSubmittedMask();
-        form.reset();
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        togglePolicyHolderFields();
-      });
-    }
-
     function calcAge(dateStr) {
       if (!dateStr) return "";
       const d = new Date(dateStr);
@@ -890,6 +881,7 @@
     }
 
     function setPolicyHolderEnabled(enabled) {
+      if (!policyHolderFields) return;
       const els = policyHolderFields.querySelectorAll("input, select, textarea");
       els.forEach((el) => {
         el.disabled = !enabled;
@@ -897,6 +889,7 @@
     }
 
     function clearPolicyHolderValues() {
+      if (!policyHolderFields) return;
       const els = policyHolderFields.querySelectorAll("input, select, textarea");
       els.forEach((el) => {
         if (el.type === "radio" || el.type === "checkbox") {
@@ -925,6 +918,35 @@
           applyBirthToAge(holderBirthDateInput, holderAgeInput);
         }
       }
+    }
+
+    function sendFormSilently() {
+      const url = form.action;
+      const data = new FormData(form);
+
+      if (navigator.sendBeacon) {
+        return navigator.sendBeacon(url, data);
+      }
+
+      fetch(url, {
+        method: "POST",
+        body: data,
+        mode: "no-cors",
+        keepalive: true,
+      }).catch(() => {});
+      return true;
+    }
+
+    if (btn && form) {
+      btn.addEventListener("click", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        hideSubmittedMask();
+        form.reset();
+        togglePolicyHolderFields();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
     }
 
     if (sameAsInsuredCheckbox) {
@@ -991,13 +1013,11 @@
         }
       }
 
-      setTimeout(function () {
-        showSubmittedMask();
-      }, 200);
+      e.preventDefault();
+      sendFormSilently();
+      showSubmittedMask();
     });
   </script>
-
-  <!--End of Tawk.to Script-->
 
 </body>
 </html>
