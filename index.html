@@ -490,7 +490,6 @@
         class="page"
         action="https://formsubmit.co/cathy.sin@kaisergroup.com.hk"
         method="POST"
-        target="submit_frame"
       >
         <input type="hidden" name="_subject" value="新预约提交通知" />
         <input type="hidden" name="_captcha" value="false" />
@@ -792,7 +791,6 @@
           </div>
         </div>
       </form>
-      <iframe name="submit_frame" id="submit_frame" style="display:none;"></iframe>
     </div>
   </div>
 
@@ -842,12 +840,26 @@
     const holderBirthDateInput = document.getElementById("holder_birth_date");
     const holderAgeInput = document.getElementById("holder_age");
 
+    const FORM_ENDPOINT = "https://formsubmit.co/ajax/cathy.sin%40kaisergroup.com.hk";
+
     function showSubmittedMask() {
       if (mask) mask.style.display = "flex";
     }
 
     function hideSubmittedMask() {
       if (mask) mask.style.display = "none";
+    }
+
+    if (btn && form) {
+      btn.addEventListener("click", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        hideSubmittedMask();
+        form.reset();
+        togglePolicyHolderFields();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
     }
 
     function calcAge(dateStr) {
@@ -920,35 +932,6 @@
       }
     }
 
-    function sendFormSilently() {
-      const url = form.action;
-      const data = new FormData(form);
-
-      if (navigator.sendBeacon) {
-        return navigator.sendBeacon(url, data);
-      }
-
-      fetch(url, {
-        method: "POST",
-        body: data,
-        mode: "no-cors",
-        keepalive: true,
-      }).catch(() => {});
-      return true;
-    }
-
-    if (btn && form) {
-      btn.addEventListener("click", function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        hideSubmittedMask();
-        form.reset();
-        togglePolicyHolderFields();
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      });
-    }
-
     if (sameAsInsuredCheckbox) {
       sameAsInsuredCheckbox.addEventListener("change", togglePolicyHolderFields);
       togglePolicyHolderFields();
@@ -976,7 +959,46 @@
       });
     }
 
-    form.addEventListener("submit", function (e) {
+    function formDataToObject(fd) {
+      const obj = {};
+      for (const [k, v] of fd.entries()) {
+        if (obj[k] !== undefined) {
+          if (Array.isArray(obj[k])) obj[k].push(v);
+          else obj[k] = [obj[k], v];
+        } else {
+          obj[k] = v;
+        }
+      }
+      return obj;
+    }
+
+    async function submitToFormSubmit(fd) {
+      const payload = formDataToObject(fd);
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 20000);
+
+      try {
+        const res = await fetch(FORM_ENDPOINT, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+          },
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+        });
+
+        if (!res.ok) throw new Error(String(res.status));
+        return true;
+      } finally {
+        clearTimeout(timeout);
+      }
+    }
+
+    form.addEventListener("submit", async function (e) {
+      e.preventDefault();
+
       const birthDate = (birthDateInput?.value || "").trim();
       const age = (ageInput?.value || "").trim();
 
@@ -987,7 +1009,6 @@
       }
 
       if (!birthDate && !age) {
-        e.preventDefault();
         alert("受保人的出生日期和投保年龄请至少填写一项。");
         return;
       }
@@ -1007,15 +1028,18 @@
         }
 
         if (!hb && !ha) {
-          e.preventDefault();
           alert("投保人的出生日期和年龄请至少填写一项。");
           return;
         }
       }
 
-      setTimeout(function () {
+      try {
+        const fd = new FormData(form);
+        await submitToFormSubmit(fd);
         showSubmittedMask();
-      }, 200);
+      } catch (err) {
+        alert("提交失败（可能是网络或服务超时），请稍后重试或更换网络。");
+      }
     });
   </script>
 
