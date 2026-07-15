@@ -847,6 +847,14 @@
 
     const form = document.getElementById("appointmentForm");
 
+    form.addEventListener("submit", function () {
+      setTimeout(function () {
+        const mask = document.getElementById("submittedMask");
+        if (mask) mask.style.display = "flex";
+        form.reset();
+      }, 300);
+    });
+
     const birthDateInput = document.getElementById("birth_date");
     const ageInput = document.getElementById("insured_age");
 
