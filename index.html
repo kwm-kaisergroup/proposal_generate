@@ -488,13 +488,11 @@
       <form
         id="appointmentForm"
         class="page"
-        action="https://formsubmit.co/cathy.sin@kaisergroup.com.hk"
-        method="POST"
       >
-        <input type="hidden" name="_subject" value="新预约提交通知" />
+<!--         <input type="hidden" name="_subject" value="新预约提交通知" />
         <input type="hidden" name="_captcha" value="false" />
         <input type="hidden" name="_template" value="table" />
-        <input type="hidden" name="表单来源" value="保险预约表单" />
+        <input type="hidden" name="表单来源" value="保险预约表单" /> -->
 
         <section class="section">
           <div class="section-header">
@@ -789,8 +787,12 @@
           <div class="submit-inner">
             <button class="submit-btn" type="submit">提交</button>
           </div>
+        <div class="action-bar" style="padding: 12px 16px 0;">
+            <button type="button" id="openTawkBtn" class="manage-btn">建议书管理</button>
+          </div>
         </div>
       </form>
+      <!-- <iframe name="submit_frame" id="submit_frame" style="display:none;"></iframe> -->
     </div>
   </div>
 
@@ -840,26 +842,12 @@
     const holderBirthDateInput = document.getElementById("holder_birth_date");
     const holderAgeInput = document.getElementById("holder_age");
 
-    const FORM_ENDPOINT = "https://formsubmit.co/ajax/cathy.sin%40kaisergroup.com.hk";
-
     function showSubmittedMask() {
       if (mask) mask.style.display = "flex";
     }
 
     function hideSubmittedMask() {
       if (mask) mask.style.display = "none";
-    }
-
-    if (btn && form) {
-      btn.addEventListener("click", function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        hideSubmittedMask();
-        form.reset();
-        togglePolicyHolderFields();
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      });
     }
 
     function calcAge(dateStr) {
@@ -932,6 +920,82 @@
       }
     }
 
+    function getCheckedValue(name) {
+      const checked = document.querySelector(`input[name="${name}"]:checked`);
+      return checked ? checked.value : "";
+    }
+
+    function getSelectValue(name) {
+      const el = document.querySelector(`select[name="${name}"]`);
+      return el ? el.value : "";
+    }
+
+    function getInputValue(name) {
+      const el = document.querySelector(`[name="${name}"]`);
+      return el ? el.value.trim() : "";
+    }
+
+    async function submitFormData() {
+      const sameAsInsured = !!(sameAsInsuredCheckbox && sameAsInsuredCheckbox.checked);
+
+      const payload = {
+        insuredName: getInputValue("受保人姓名"),
+        insuredGender: getCheckedValue("受保人性别"),
+        insuredBirthDate: getInputValue("受保人出生日期"),
+        insuredAge: getInputValue("投保年龄"),
+        insuredSmoking: getCheckedValue("是否吸烟"),
+        insuredResidence: getSelectValue("居住地"),
+
+        sameAsInsured,
+        policyHolderName: getInputValue("投保人姓名"),
+        policyHolderGender: getCheckedValue("投保人性别"),
+        policyHolderBirthDate: getInputValue("投保人出生日期"),
+        policyHolderAge: getInputValue("投保人年龄"),
+        policyHolderSmoking: getCheckedValue("投保人是否吸烟"),
+        policyHolderResidence: getSelectValue("投保人居住地"),
+
+        company: getSelectValue("保险公司"),
+        productName: getInputValue("产品名称"),
+        paymentTerm: getInputValue("缴付年期"),
+        paymentFrequency: getSelectValue("缴费频率"),
+        coverageTerm: getSelectValue("保障期限"),
+        policyCurrency: getSelectValue("保单货币"),
+        amountInputType: getSelectValue("金额输入方式"),
+        annualPremium: getInputValue("年缴保费"),
+
+        withdrawalPlan: getInputValue("提取计划"),
+        remarks: getInputValue("备注"),
+      };
+
+      const response = await fetch("/api/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "提交失败");
+      }
+
+      return result;
+    }
+
+    if (btn && form) {
+      btn.addEventListener("click", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        hideSubmittedMask();
+        form.reset();
+        togglePolicyHolderFields();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    }
+
     if (sameAsInsuredCheckbox) {
       sameAsInsuredCheckbox.addEventListener("change", togglePolicyHolderFields);
       togglePolicyHolderFields();
@@ -957,43 +1021,6 @@
         if (sameAsInsuredCheckbox && sameAsInsuredCheckbox.checked) return;
         applyAgeToBirth(holderAgeInput, holderBirthDateInput);
       });
-    }
-
-    function formDataToObject(fd) {
-      const obj = {};
-      for (const [k, v] of fd.entries()) {
-        if (obj[k] !== undefined) {
-          if (Array.isArray(obj[k])) obj[k].push(v);
-          else obj[k] = [obj[k], v];
-        } else {
-          obj[k] = v;
-        }
-      }
-      return obj;
-    }
-
-    async function submitToFormSubmit(fd) {
-      const payload = formDataToObject(fd);
-
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 20000);
-
-      try {
-        const res = await fetch(FORM_ENDPOINT, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-          },
-          body: JSON.stringify(payload),
-          signal: controller.signal,
-        });
-
-        if (!res.ok) throw new Error(String(res.status));
-        return true;
-      } finally {
-        clearTimeout(timeout);
-      }
     }
 
     form.addEventListener("submit", async function (e) {
@@ -1033,14 +1060,38 @@
         }
       }
 
+      const submitBtn = form.querySelector(".submit-btn");
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = "提交中...";
+      }
+
       try {
-        const fd = new FormData(form);
-        await submitToFormSubmit(fd);
+        await submitFormData();
         showSubmittedMask();
-      } catch (err) {
-        alert("提交失败（可能是网络或服务超时），请稍后重试或更换网络。");
+      } catch (error) {
+        alert(error.message || "提交失败，请稍后再试。");
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = "提交";
+        }
       }
     });
+  </script>
+
+  <script>
+    const openTawkBtn = document.getElementById("openTawkBtn");
+
+    if (openTawkBtn) {
+      openTawkBtn.addEventListener("click", function () {
+        if (typeof Tawk_API !== "undefined" && typeof Tawk_API.maximize === "function") {
+          Tawk_API.maximize();
+        } else {
+          alert("对话窗口正在加载，请稍后再试。");
+        }
+      });
+    }
   </script>
 
   <!--Start of Tawk.to Script-->
